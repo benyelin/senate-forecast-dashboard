@@ -1,0 +1,36 @@
+name: Run Senate Model
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 13 * * *"  # optional: runs daily at 9am Eastern during EDT
+
+permissions:
+  contents: write
+
+jobs:
+  run-model:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run model pipeline
+        run: python run_full_pipeline.py --sims 50000
+
+      - name: Commit updated model outputs
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add outputs inputs/polling_averages_generated.csv inputs/bayesian_update_generated.csv inputs/national_environment.csv
+          git commit -m "Update Senate model outputs" || echo "No changes to commit"
+          git push
